@@ -1,0 +1,15 @@
+name: toshi
+version: 0.1.0
+
+authors:
+  - Holden Omans <holden.omans@gmail.com>
+
+crystal: 1.7.2
+
+license: MIT
+
+dependencies:
+  halite:
+    github: icyleaf/halite
+  db:
+    github: crystal-lang/crystal-db
