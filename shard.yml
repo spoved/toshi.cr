@@ -9,8 +9,6 @@ crystal: ">= 1.6.0, < 2.0.0"
 license: MIT
 
 dependencies:
-  halite:
-    github: icyleaf/halite
   db:
     github: crystal-lang/crystal-db
 development_dependencies:

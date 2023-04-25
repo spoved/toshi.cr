@@ -78,7 +78,6 @@ module Toshi::Api
     def {{name.id}}(**args)
       {{@type.id}}.{{name.id}}(**args)
     end
-    {% debug %}
   end
 
   private macro _resp_to_json(resp_klass, resp)
