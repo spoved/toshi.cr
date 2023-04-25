@@ -13,3 +13,7 @@ dependencies:
     github: icyleaf/halite
   db:
     github: crystal-lang/crystal-db
+development_dependencies:
+  spectator:
+    github: icy-arctic-fox/spectator
+    version: ~> 0.11.6

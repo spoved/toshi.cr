@@ -1,0 +1,24 @@
+name: release
+on: [release]
+jobs:
+  spec:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        crystal: [1.0.0, latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Download source
+        uses: actions/checkout@v2
+      - name: Install Crystal
+        uses: oprypin/install-crystal@v1
+        with:
+          crystal: ${{ matrix.crystal }}
+      - name: Install shards
+        run: shards update --ignore-crystal-version
+      - name: Run tests
+        run: crystal spec --order=random
+      - name: Check formatting
+        run: crystal tool format --check
+        if: matrix.crystal == 'latest'
