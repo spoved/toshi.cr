@@ -1,7 +1,7 @@
 require "../spec_helper"
 
 Spectator.describe Toshi::Api do
-  before_each { Spec::Client.configure(nil) }
+  before_each { Spec::Client.configure }
   let(client) { Spec::Client }
 
   it "should create default options" do
@@ -45,7 +45,7 @@ Spectator.describe Toshi::Api do
   end
 
   context "#define_api_method" do
-    context Spec::Client::User do
+    context :get do
       it "200" do
         data = Spec::Client.get_user(2)
         expect(data).to be_a Spec::Client::User
@@ -56,6 +56,41 @@ Spectator.describe Toshi::Api do
         expect_raises(Toshi::Error::NotFound) do
           Spec::Client.get_user(23)
         end
+      end
+    end
+
+    context :post do
+      it "201" do
+        data = Spec::Client.create_user({name: "morpheus", job: "leader"})
+        expect(data).to be_a Spec::Client::Resp::Post
+        expect(data.name).to eq("morpheus")
+        expect(data.job).to eq("leader")
+        expect(data.id).to_not be_nil
+      end
+    end
+
+    context :put do
+      it "200" do
+        data = Spec::Client.update_user(id: 2, body: {name: "morpheus", job: "zion resident"})
+        expect(data).to be_a Spec::Client::Resp::Put
+        expect(data.name).to eq("morpheus")
+        expect(data.job).to eq("zion resident")
+      end
+    end
+
+    context :patch do
+      it "200" do
+        data = Spec::Client.patch_user(id: 2, body: {name: "morpheus", job: "zion resident"})
+        expect(data).to be_a Spec::Client::Resp::Patch
+        expect(data.name).to eq("morpheus")
+        expect(data.job).to eq("zion resident")
+      end
+    end
+
+    context :delete do
+      it "204" do
+        data = Spec::Client.delete_user(id: 2)
+        expect(data).to be_nil
       end
     end
   end

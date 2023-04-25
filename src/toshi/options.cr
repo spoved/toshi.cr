@@ -6,7 +6,7 @@ module Toshi::Api
     property prefix : String? = nil
     property tls_verify_mode : OpenSSL::SSL::VerifyMode = OpenSSL::SSL::VerifyMode::PEER
     property default_headers : HTTP::Headers = HTTP::Headers{
-      "Content-Type" => "application/json",
+      "Content-Type" => "application/json; charset=utf-8",
       "Accept"       => "application/json",
     }
     property pool_capacity = 200

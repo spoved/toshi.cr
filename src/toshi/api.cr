@@ -56,7 +56,57 @@ module Toshi::Api
     end
   end
 
-  macro define_api_method(name, path, klass, method = :get)
+  macro define_api_method(name, path, method = :get, resp_klass = nil)
+    {% if method == :get %}
+      define_var_method({{name}}, {{path}}, "GET", {{resp_klass}})
+    {% elsif method == :post %}
+      define_body_method({{name}}, {{path}}, "POST", {{resp_klass}})
+    {% elsif method == :put %}
+      define_body_method({{name}}, {{path}}, "PUT", {{resp_klass}})
+    {% elsif method == :patch %}
+      define_body_method({{name}}, {{path}}, "PATCH", {{resp_klass}})
+    {% elsif method == :delete %}
+      define_var_method({{name}}, {{path}}, "DELETE", {{resp_klass}})
+    {% else %}
+      raise "Unknown method: {{method}}"
+    {% end %}
+
+    def {{name.id}}(**args)
+      {{@type.id}}.{{name.id}}(**args)
+    end
+  end
+
+  private macro _resp_to_json(resp_klass, resp)
+    {% if resp_klass == nil %}
+      nil
+    {% else %}
+      {{resp_klass}}.from_json({{resp}})
+    {% end %}
+  end
+
+  private macro define_body_method(name, path, method, resp_klass = nil)
+    {%
+      values = path.split("/").map_with_index do |part, i|
+        part.starts_with?(":") ? part.gsub(/^\:/, "") : nil
+      end.reject(&.nil?)
+    %}
+
+    {% if values.size > 0 %}
+    def self.{{name.id}}({{*values.map(&.id)}}, body, params = nil, headers = nil)
+      path = {{path}}
+      {% for val in values %}
+      path = path.gsub(":{{val.id}}", {{val.id}})
+      {% end %}
+      _resp_to_json({{resp_klass}}, self._request(path, {{method}}, params, headers, body: body))
+    end
+    {% else %}
+    def self.{{name.id}}(body, params = nil, headers = nil)
+      _resp_to_json({{resp_klass}}, self._request({{path}}, {{method}}, params, headers, body: body))
+    end
+    {% end %}
+  end
+
+  private macro define_var_method(name, path, method, resp_klass = nil)
     {%
       values = path.split("/").map_with_index do |part, i|
         part.starts_with?(":") ? part.gsub(/^\:/, "") : nil
@@ -69,17 +119,12 @@ module Toshi::Api
       {% for val in values %}
       path = path.gsub(":{{val.id}}", {{val.id}})
       {% end %}
-      {{klass}}.from_json(self._request(path, {{method.id.stringify.upcase}}, params, headers))
+      _resp_to_json({{resp_klass}}, self._request(path, {{method}}, params, headers))
     end
     {% else %}
     def self.{{name.id}}(params = nil, headers = nil)
-      # path = path.gsub("{{part}}", params["{{part[1..-1]}}"].to_s)
-      {{klass}}.from_json(self._request({{path}}, {{method}}, params, headers))
+      _resp_to_json({{resp_klass}}, self._request({{path}}, {{method}}, params, headers))
     end
     {% end %}
-
-    def {{name.id}}(**args)
-      {{@type.id}}.{{name.id}}(**args)
-    end
   end
 end

@@ -54,18 +54,32 @@ module Toshi::Api
     end
 
     # Generic method for making a request with params and headers
-    def _request(path : String, method = "GET", params = nil, headers = nil, body = nil)
+    def _request(path : String, method = "GET", params = nil, headers = nil, body : String | JSON::Serializable | NamedTuple | Nil = nil)
       uri = make_request_uri(path, params)
-      _request(uri, method, headers, body)
+      _body = case body
+              when NamedTuple, JSON::Serializable
+                body.to_json
+              else
+                body
+              end
+      _request(uri, method, headers, _body)
     end
 
-    def _request(uri : URI, method = "GET", headers = nil, body = nil)
-      sleep(self.options.sleep_time) if self.options.sleep_time > 0
+    def _request(uri : URI, method = "GET", headers = nil, body : String? = nil)
+      if headers.nil?
+        headers = self.options.default_headers
+      else
+        headers = self.options.default_headers.clone.merge!(headers)
+      end
 
-      logger.debug { "#{method}: #{uri}" }
+      logger.debug &.emit("Performing request", method: method, uri: uri.to_s,
+        headers: headers.to_s, body: body, sleep_time: self.options.sleep_time)
+
+      sleep(self.options.sleep_time) if self.options.sleep_time > 0
 
       using_connection do |client|
         resp = client.exec(method, path: uri.to_s, headers: headers, body: body)
+        logger.trace { "Response: #{resp.status_code} #{resp.body}" }
         if resp.success?
           resp.body
         elsif resp.status_code == 404
