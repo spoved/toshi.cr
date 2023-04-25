@@ -80,7 +80,7 @@ Spectator.describe Toshi::Api do
 
     context :patch do
       it "200" do
-        data = Spec::Client.patch_user(id: 2, body: {name: "morpheus", job: "zion resident"})
+        data = Spec::Client.patch_users(id: 2, body: {name: "morpheus", job: "zion resident"})
         expect(data).to be_a Spec::Client::Resp::Patch
         expect(data.name).to eq("morpheus")
         expect(data.job).to eq("zion resident")
@@ -89,7 +89,7 @@ Spectator.describe Toshi::Api do
 
     context :delete do
       it "204" do
-        data = Spec::Client.delete_user(id: 2)
+        data = Spec::Client.delete_users(id: 2)
         expect(data).to be_nil
       end
     end

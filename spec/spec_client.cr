@@ -3,11 +3,11 @@ module Spec::Client
 
   define_api "reqres.in", prefix: "/api"
 
-  define_api_method :get_user, "/users/:id", :get, resp_klass: User
+  define_api_method :get, "/users/:id", name: :get_user, resp_klass: User
   define_api_method(name: :create_user, path: "users", method: :post, resp_klass: Resp::Post)
-  define_api_method(:update_user, "users/:id", :put, Resp::Put)
-  define_api_method(:patch_user, "users/:id", :patch, Resp::Patch)
-  define_api_method(:delete_user, "/users/:id", :delete)
+  define_api_method(:put, "users/:id", Resp::Put, name: :update_user)
+  define_api_method(:patch, "users/:id", Resp::Patch)
+  define_api_method :delete, "/users/:id"
 
   struct User
     include JSON::Serializable

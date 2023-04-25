@@ -56,7 +56,11 @@ module Toshi::Api
     end
   end
 
-  macro define_api_method(name, path, method = :get, resp_klass = nil)
+  macro define_api_method(method, path, resp_klass = nil, name = nil)
+    {% if name == nil
+         name = "#{method.id}_#{path.id.gsub(/[\/\-]/, "_")}".gsub(/_\:.*/, "").gsub(/_{2}/, "_")
+       end %}
+
     {% if method == :get %}
       define_var_method({{name}}, {{path}}, "GET", {{resp_klass}})
     {% elsif method == :post %}
@@ -74,6 +78,7 @@ module Toshi::Api
     def {{name.id}}(**args)
       {{@type.id}}.{{name.id}}(**args)
     end
+    {% debug %}
   end
 
   private macro _resp_to_json(resp_klass, resp)
