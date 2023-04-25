@@ -1,4 +1,5 @@
 require "./options"
+require "./api/*"
 
 module Toshi::Api
   macro included
@@ -55,77 +56,30 @@ module Toshi::Api
     end
   end
 
-  module ClassMethods
-    abstract def _create_client : HTTP::Client
-    abstract def _create_pool : DB::Pool(HTTP::Client)
-    abstract def default_options : Options
-    abstract def options : Options
-    abstract def pool : DB::Pool(HTTP::Client)
-    abstract def logger
+  macro define_api_method(name, path, klass, method = :get)
+    {%
+      values = path.split("/").map_with_index do |part, i|
+        part.starts_with?(":") ? part.gsub(/^\:/, "") : nil
+      end.reject(&.nil?)
+    %}
 
-    def configure(_options : Options? = nil, &block)
-      opts = (_options || self.default_options)
-      yield opts
-      configure(opts)
-      self
+    {% if values.size > 0 %}
+    def self.{{name.id}}({{*values.map(&.id)}}, params = nil, headers = nil)
+      path = {{path}}
+      {% for val in values %}
+      path = path.gsub(":{{val.id}}", {{val.id}})
+      {% end %}
+      {{klass}}.from_json(self._request(path, {{method.id.stringify.upcase}}, params, headers))
     end
-
-    def configure(_options : Options? = nil)
-      @@options = (_options || self.default_options)
-
-      begin
-        logger.trace { "Closing pool" }
-        self.pool.close
-      rescue ex : Exception
-        logger.error { ex.message }
-        logger.trace(exception: ex) { ex.message }
-      end
-      @@pool = self._create_pool
-
-      self
+    {% else %}
+    def self.{{name.id}}(params = nil, headers = nil)
+      # path = path.gsub("{{part}}", params["{{part[1..-1]}}"].to_s)
+      {{klass}}.from_json(self._request({{path}}, {{method}}, params, headers))
     end
+    {% end %}
 
-    # Will check out a connection from the pool and yield it to the block
-    private def using_connection
-      self.pool.retry do
-        self.pool.checkout do |conn|
-          yield conn
-        rescue ex : IO::Error | IO::TimeoutError
-          logger.error { ex.message }
-          logger.trace(exception: ex) { ex.message }
-          raise Toshi::Error::ConnectionLost.new(conn)
-        end
-      end
-    end
-
-    # URI helper function
-    def make_request_uri(path : String, params : String | Nil = nil) : URI
-      _path = File.join(self.options.prefix || "", path)
-      if _path[0] != '/'
-        _path = '/' + _path
-      end
-      URI.new(path: _path, query: params)
-    end
-
-    # Make a request with a string URI
-    def make_request(path : String, params : String | Nil = nil)
-      make_request(make_request_uri(path, params))
-    end
-
-    # Make a request with a URI object
-    def make_request(uri : URI)
-      sleep(self.options.sleep_time) if self.options.sleep_time > 0
-      logger.debug { "GET: #{uri}" }
-      using_connection do |client|
-        resp = client.get(uri.to_s, headers: self.options.default_headers)
-        if resp.success?
-          resp.body
-        elsif resp.status_code == 404
-          raise Error::NotFound.new(resp.body, resp.status_code)
-        else
-          raise Error.new(resp.body, resp.status_code)
-        end
-      end
+    def {{name.id}}(**args)
+      {{@type.id}}.{{name.id}}(**args)
     end
   end
 end

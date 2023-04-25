@@ -30,16 +30,32 @@ Spectator.describe Toshi::Api do
     expect(client.options.prefix).to eq "/api/v1"
   end
 
-  context "#make_request" do
+  context "#_request" do
     it "200" do
-      data = Spec::Client.make_request("/users/2")
+      data = Spec::Client._request("/users/2")
       expect(data).to be_a String
       expect(data).to contain("janet.weaver")
     end
 
     it "404" do
       expect_raises(Toshi::Error::NotFound) do
-        Spec::Client.make_request("/unknown/23")
+        Spec::Client._request("/unknown/23")
+      end
+    end
+  end
+
+  context "#define_api_method" do
+    context Spec::Client::User do
+      it "200" do
+        data = Spec::Client.get_user(2)
+        expect(data).to be_a Spec::Client::User
+        expect(data.data.email).to contain("janet.weaver")
+      end
+
+      it "404" do
+        expect_raises(Toshi::Error::NotFound) do
+          Spec::Client.get_user(23)
+        end
       end
     end
   end
