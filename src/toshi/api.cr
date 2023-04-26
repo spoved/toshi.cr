@@ -25,6 +25,40 @@ module Toshi::Api
     end
   end
 
+  # Defines the default options for the API
+  #
+  # ```
+  # class MyApi
+  #   include Toshi::Api
+  #   define_api("api.example.com", "https", 443, "/v1", OpenSSL::SSL::VerifyMode::PEER, HTTP::Headers{
+  #     "Content-Type" => "application/json",
+  #     "Accept"       => "application/json",
+  #   }, 200, 20, 0.1, 0.0)
+  # end
+  # ```
+  #
+  # At a minimum, you must provide the host. The rest of the options are optional.
+  #
+  # ```
+  # class MyApi
+  #   include Toshi::Api
+  #   define_api "api.example.com"
+  # end
+  # ```
+  #
+  # The default options are:
+  # - `scheme`: `https`
+  # - `port`: `443`
+  # - `prefix`: `nil`
+  # - `tls_verify_mode`: `OpenSSL::SSL::VerifyMode::PEER`
+  # - `default_headers`: `HTTP::Headers{ "Content-Type" => "application/json", "Accept" => "application/json" }`
+  # - `sleep_time`: `0.0` - the time to sleep between requests
+  #
+  # The client pool options are:
+  # - `pool_capacity`: `200` - the maximum number of clients to create
+  # - `initial_pool_size`: `20` - the initial number of clients to create
+  # - `pool_timeout`: `0.1` - the timeout to wait for a client to be available
+  #
   macro define_api(host, scheme = "https", port = nil, prefix = nil, tls_verify_mode = OpenSSL::SSL::VerifyMode::PEER, default_headers = HTTP::Headers{
                      "Content-Type" => "application/json",
                      "Accept"       => "application/json",
@@ -56,9 +90,43 @@ module Toshi::Api
     end
   end
 
+  # Defines a new API method based on the given path and method. The method name is derived from the path and method.
+  # If the path includes a variable (e.g. `/users/:id`, `/users/:id/books/:book_id`), then the method will be defined with
+  # the variables as the first arguments.
+  #
+  # ```
+  # class MyApi
+  #   include Toshi::Api
+  #   define_api("api.example.com")
+  #
+  #   define_api_method :get, "/users/:id", User
+  #   define_api_method :get, "/users/:id/books/:book_id", UserBook
+  # end
+  #
+  # MyApi.get_users(id: 1)                   # => GET /users/1
+  # MyApi.get_users_books(id: 1, book_id: 2) # => GET /users/1/books/2
+  # ```
+  #
+  # You can also define the name of the generated method by passing it:
+  #
+  # ```
+  # class MyApi
+  #   include Toshi::Api
+  #   define_api("api.example.com")
+  #
+  #   define_api_method :get, "/users/:id", User, :user_method
+  # end
+  #
+  # MyApi.user_method(id: 1) # => GET /users/1
+  # ```
+  #
+  # If no response class is given, then the response will be `nil`.
   macro define_api_method(method, path, resp_klass = nil, name = nil)
     {% if name == nil
-         name = "#{method.id}_#{path.id.gsub(/[\/\-]/, "_")}".gsub(/_\:.*/, "").gsub(/_{2}/, "_")
+         path_name = path.split("/").map do |part|
+           part.starts_with?(":") ? "" : part.gsub(/[\/\-]/, "_")
+         end.reject(&.empty?).join("_")
+         name = "#{method.id}_#{path_name.id}".gsub(/_{2,}/, "_")
        end %}
 
     {% if method == :get %}

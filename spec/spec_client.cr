@@ -8,6 +8,7 @@ module Spec::Client
   define_api_method(:put, "users/:id", Resp::Put, name: :update_user)
   define_api_method(:patch, "users/:id", Resp::Patch)
   define_api_method :delete, "/users/:id"
+  define_api_method :get, "/users/:id/books/:book_id"
 
   struct User
     include JSON::Serializable

@@ -9,6 +9,17 @@ module Toshi::Api
     abstract def pool : DB::Pool(HTTP::Client)
     abstract def logger
 
+    # Configure the API client
+    #
+    # ```
+    # MyApi.configure do |opts|
+    #   opts.host = "localhost"
+    #   opts.port = 5000
+    #   opts.prefix = "api/v0"
+    #   opts.default_headers = {"User-Agent" => "Toshi-Ruby-Client"}
+    #   opts.sleep_time = 0.1
+    # end
+    # ```
     def configure(_options : Options? = nil, &block)
       opts = (_options || self.default_options)
       yield opts
@@ -65,6 +76,7 @@ module Toshi::Api
       _request(uri, method, headers, _body)
     end
 
+    # Generic method for making a request with a URI and headers
     def _request(uri : URI, method = "GET", headers = nil, body : String? = nil)
       if headers.nil?
         headers = self.options.default_headers
